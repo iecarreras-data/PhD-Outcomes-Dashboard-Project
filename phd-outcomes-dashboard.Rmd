@@ -1,0 +1,829 @@
+---
+title: "PhD Career Outcomes Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    self_contained: false  # Changed to false
+---
+
+<!-- This block imports and applies the Google Font -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
+
+body, .main-container, .navbar {
+  font-family: 'Instrument Sans', sans-serif;
+}
+/* Fix sidebar content positioning */
+.section.sidebar {
+  padding-left: 25px !important;
+  padding-right: 10px !important;
+}
+
+/* Ensure filter labels have proper spacing */
+.form-group label {
+  margin-left: 0px;
+  padding-left: 0px;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+# --- 1. SETUP & LIBRARIES ---
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  flexdashboard, here, tidyverse, plotly, crosstalk, scales, countrycode, DT
+)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
+# --- 2. CONFIGURATION & CONSTANTS ---
+input_data_path <- here("data", "processed", "03_final_dataset.rds")
+
+industry_palette <- c(
+  "Faculty (TT)" = "#8B0000", "Faculty (Other)" = "#B22222", "Post Doc/Fellow" = "#CD5C5C",
+  "Other Academic" = "#E9967A", "For-Profit" = "#4169E1", "Government" = "#6495ED",
+  "Nonprofit" = "#708090", "Not available" = "#FFF0F5"
+)
+cohort_order <- c("2024-2025", "2021-2023", "2018-2020", "2016-2017")
+visual_order <- c("Faculty (TT)", "Faculty (Other)", "Post Doc/Fellow", "Other Academic", "For-Profit", "Government", "Nonprofit", "Not available")
+stacking_order <- rev(visual_order)
+
+
+# --- 3. DATA PREPARATION (RESTRUCTURED FOR DEFAULT) ---
+grad_data_raw <- readRDS(input_data_path)
+
+data_with_cohorts <- grad_data_raw %>%
+  mutate(
+    gradYearCohort = case_when(
+      gradYear %in% 2024:2025 ~ "2024-2025",
+      gradYear %in% 2021:2023 ~ "2021-2023",
+      gradYear %in% 2018:2020 ~ "2018-2020",
+      gradYear %in% 2016:2017 ~ "2016-2017"
+    )
+  ) %>%
+  filter(!is.na(gradYearCohort))
+
+# Create individual department data
+dept_data <- data_with_cohorts %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, gradYearCohort, jobSector, name = "count") %>%
+  group_by(program_filter, gradYearCohort) %>%
+  mutate(percentage = count / sum(count)) %>%
+  ungroup()
+
+# Create "All Departments" summary 
+all_depts_data <- data_with_cohorts %>%
+  count(gradYearCohort, jobSector, name = "count") %>%
+  group_by(gradYearCohort) %>%
+  mutate(
+    percentage = count / sum(count),
+    program_filter = "All Departments"
+  ) %>%
+  ungroup()
+
+# Combine and make "All Departments" the ONLY initial data
+plot_data <- all_depts_data %>%
+  bind_rows(dept_data) %>%
+  mutate(
+    gradYearCohort = factor(gradYearCohort, levels = cohort_order),
+    jobSector = factor(jobSector, levels = stacking_order)
+  )
+
+# Order factors so "All Departments" comes first
+dept_names <- dept_data$program_filter %>% unique() %>% sort()
+plot_data <- plot_data %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+# Create SharedData for job sector chart
+sd_plot_data <- SharedData$new(
+  plot_data, 
+  key = ~program_filter,
+  group = "program_group"
+)
+
+# --- 4. ACADEMIC POSITIONS CHART DATA PREP ---
+academic_palette <- c(
+  "Faculty (Tenure or Tenure Track)" = "#A51C30", 
+  "Faculty (Other)" = "#c0606e",
+  "Post Doc/Fellow" = "#dba4ac", 
+  "Researcher (non teaching)" = "#edd1d5"
+)
+
+academic_cohort_order <- c("2023-2024", "2020-2022", "2017-2019", "2015-2016")
+academic_stacking_order <- c("Faculty (Tenure or Tenure Track)", "Faculty (Other)", 
+                           "Post Doc/Fellow", "Researcher (non teaching)")
+
+# Create academic positions data (similar structure but with counts, not percentages)
+academic_dept_data <- data_with_cohorts %>%
+  mutate(
+    academicPosition = recode(academicPosition, "Researcher (Non-Teaching)" = "Researcher (non teaching)"),
+    gradYearCohort_academic = case_when(
+      gradYear %in% 2023:2024 ~ "2023-2024", 
+      gradYear %in% 2020:2022 ~ "2020-2022",
+      gradYear %in% 2017:2019 ~ "2017-2019", 
+      gradYear %in% 2015:2016 ~ "2015-2016"
+    )
+  ) %>%
+  filter(!is.na(gradYearCohort_academic), 
+         academicPosition %in% names(academic_palette)) %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, gradYearCohort_academic, academicPosition, name = "count")
+
+# Create "All Departments" summary for academic data
+academic_all_depts <- data_with_cohorts %>%
+  mutate(
+    academicPosition = recode(academicPosition, "Researcher (Non-Teaching)" = "Researcher (non teaching)"),
+    gradYearCohort_academic = case_when(
+      gradYear %in% 2023:2024 ~ "2023-2024", 
+      gradYear %in% 2020:2022 ~ "2020-2022",
+      gradYear %in% 2017:2019 ~ "2017-2019", 
+      gradYear %in% 2015:2016 ~ "2015-2016"
+    )
+  ) %>%
+  filter(!is.na(gradYearCohort_academic), 
+         academicPosition %in% names(academic_palette)) %>%
+  count(gradYearCohort_academic, academicPosition, name = "count") %>%
+  mutate(program_filter = "All Departments")
+
+# Combine academic data
+academic_plot_data <- academic_all_depts %>%
+  bind_rows(academic_dept_data) %>%
+  mutate(
+    gradYearCohort_academic = factor(gradYearCohort_academic, levels = academic_cohort_order),
+    academicPosition = factor(academicPosition, levels = rev(academic_stacking_order)),
+    program_filter = factor(program_filter, levels = c("All Departments", dept_names))
+  )
+
+# Create SharedData for academic chart - using same group so filter works for both
+sd_academic_data <- SharedData$new(academic_plot_data, key = ~program_filter, group = "program_group")
+
+# --- 5. INSTITUTIONAL CHARACTERISTICS DATA PREP ---
+# Filter for graduates in core academic research/teaching roles
+institutional_base_data <- data_with_cohorts %>%
+  filter(academicPosition %in% c(
+    "Faculty (Tenure or Tenure Track)", "Faculty (Other)",
+    "Post Doc/Fellow", "Researcher (Non-Teaching)", "Researcher (non teaching)"
+  )) %>%
+  mutate(
+    AAU_Status = recode(aau, "AAU Member" = "AAU", "Non-AAU Member" = "Non-AAU"),
+    Inst_Control = recode(control, "International" = "Int'l"),
+    Carnegie_Simple = str_wrap(carnegie, width = 40)
+  )
+
+# Create department-level summaries
+inst_dept_data <- institutional_base_data %>%
+  mutate(program_filter = program)
+
+# Create "All Departments" summary  
+inst_all_depts <- institutional_base_data %>%
+  mutate(program_filter = "All Departments")
+
+# Combine institutional data
+institutional_plot_data <- bind_rows(inst_all_depts, inst_dept_data) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+# Create SharedData for institutional charts
+sd_institutional_data <- SharedData$new(institutional_plot_data, key = ~program_filter, group = "program_group")
+
+# --- 6. GEOGRAPHY DATA PREP ---
+# --- U.S. GEOGRAPHIC DATA PREP ---
+# Get counts for states (excluding DC and PR for map)
+us_geo_data <- data_with_cohorts %>%
+  filter(country == "USA", !is.na(state), !state %in% c("DC", "PR")) %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, state, name = "count")
+
+# Create "All Departments" summary for U.S. data (excluding DC and PR)
+us_geo_all <- data_with_cohorts %>%
+  filter(country == "USA", !is.na(state), !state %in% c("DC", "PR")) %>%
+  count(state, name = "count") %>%
+  mutate(program_filter = "All Departments")
+
+# Combine U.S. data for map
+us_plot_data <- us_geo_all %>%
+  bind_rows(us_geo_data) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+sd_us_data <- SharedData$new(us_plot_data, key = ~program_filter, group = "program_group")
+
+# --- CALCULATE DC, PR, AND UNSPECIFIED COUNTS ---
+# DC counts by department
+dc_counts <- data_with_cohorts %>%
+  filter(country == "USA", state == "DC") %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, name = "dc_count") %>%
+  bind_rows(data_with_cohorts %>%
+              filter(country == "USA", state == "DC") %>%
+              count(name = "dc_count") %>%
+              mutate(program_filter = "All Departments")) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+sd_dc_counts <- SharedData$new(dc_counts, key = ~program_filter, group = "program_group")
+
+# PR counts by department  
+pr_counts <- data_with_cohorts %>%
+  filter(country == "USA", state == "PR") %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, name = "pr_count") %>%
+  bind_rows(data_with_cohorts %>%
+              filter(country == "USA", state == "PR") %>%
+              count(name = "pr_count") %>%
+              mutate(program_filter = "All Departments")) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+sd_pr_counts <- SharedData$new(pr_counts, key = ~program_filter, group = "program_group")
+
+# Unspecified US counts by department
+unspec_counts <- data_with_cohorts %>%
+  filter(country == "USA", is.na(state)) %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, name = "unspec_count") %>%
+  bind_rows(data_with_cohorts %>%
+              filter(country == "USA", is.na(state)) %>%
+              count(name = "unspec_count") %>%
+              mutate(program_filter = "All Departments")) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+sd_unspec_counts <- SharedData$new(unspec_counts, key = ~program_filter, group = "program_group")
+
+# --- INTERNATIONAL GEOGRAPHIC DATA PREP (unchanged) ---
+intl_geo_data <- data_with_cohorts %>%
+  filter(country != "USA", !is.na(country)) %>%
+  mutate(
+    program_filter = program,
+    DisplayCode = recode(country,
+                        "Canada" = "CAN",
+                        "CH" = "SUI", 
+                        "Switzerland" = "SUI",
+                        "Germany" = "GER",
+                        "Japan" = "JPN", 
+                        "Netherlands" = "NED",
+                        "UK" = "UK",
+                        .default = country),
+    Region = case_when(
+      DisplayCode %in% c("CAN") ~ "Americas",
+      DisplayCode %in% c("UK", "SUI", "GER", "NED") ~ "Europe", 
+      DisplayCode %in% c("JPN") ~ "Asia incl. Middle East",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  count(program_filter, DisplayCode, Region, name = "count")
+
+intl_geo_all <- data_with_cohorts %>%
+  filter(country != "USA", !is.na(country)) %>%
+  mutate(
+    DisplayCode = recode(country,
+                        "Canada" = "CAN",
+                        "CH" = "SUI", 
+                        "Switzerland" = "SUI", 
+                        "Germany" = "GER",
+                        "Japan" = "JPN",
+                        "Netherlands" = "NED", 
+                        "UK" = "UK",
+                        .default = country),
+    Region = case_when(
+      DisplayCode %in% c("CAN") ~ "Americas",
+      DisplayCode %in% c("UK", "SUI", "GER", "NED") ~ "Europe",
+      DisplayCode %in% c("JPN") ~ "Asia incl. Middle East", 
+      TRUE ~ "Other"
+    )
+  ) %>%
+  count(DisplayCode, Region, name = "count") %>%
+  mutate(program_filter = "All Departments")
+
+intl_plot_data <- intl_geo_all %>%
+  bind_rows(intl_geo_data) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+sd_intl_data <- SharedData$new(intl_plot_data, key = ~program_filter, group = "program_group")
+
+# --- 7. GRADUATE LISTINGS DATA PREP ---
+graduate_listings_data <- data_with_cohorts %>%
+  select(
+    personID,
+    program,
+    degree,
+    gradYear,
+    entityName,
+    position,
+    jobSector, 
+    academicPosition,
+    startYear,
+    country,
+    state
+  ) %>%
+  mutate(
+    program_filter = program,
+    # Create clean display columns with your labels
+    ID = personID,
+    Department = program,
+    Degree = ifelse(is.na(degree), "N/A", degree),
+    `Grad Year` = gradYear,
+    Employer = ifelse(is.na(entityName), "Not specified", entityName),
+    Position = ifelse(is.na(position), "Not specified", position),
+    `Job Sector` = jobSector,
+    `Academic Position` = ifelse(is.na(academicPosition), "N/A", academicPosition),
+    `Start Year` = ifelse(is.na(startYear), "N/A", startYear),
+    Country = ifelse(is.na(country), "Unknown", country),
+    State = ifelse(is.na(state), "N/A", state)
+  ) %>%
+  select(
+    program_filter,
+    ID,
+    Department,
+    Degree,
+    `Grad Year`,
+    Employer,
+    Position,
+    `Job Sector`,
+    `Academic Position`,
+    `Start Year`,
+    Country,
+    State
+  ) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+sd_graduate_listings <- SharedData$new(graduate_listings_data, key = ~program_filter, group = "program_group")
+```
+
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+This sidebar contains controls to filter the data visualized on the dashboard.
+
+
+```{r}
+crosstalk::bscols(
+  filter_select(
+    id = "program_filter",
+    label = "Filter by Department",
+    sharedData = sd_plot_data,
+    group = ~program_filter,
+    multiple = FALSE,
+    allLevels = FALSE 
+  )
+)
+```
+
+```{r}
+htmltools::div(
+  style = "background-color: #f0f8ff; padding: 8px; margin: 8px 0; border-left: 3px solid #007bff; font-size: 0.9em;",
+  htmltools::strong("Note: "), "Please select 'All Departments' from the dropdown above to view the complete summary, or choose a specific department to filter the data.",
+  htmltools::br(),
+  htmltools::br(),
+  htmltools::strong("Graduate Listings: "), "The Graduate Listings tab shows all records and uses its own built-in search and filter functionality instead of the department dropdown."
+)
+```
+
+
+
+Column {data-width=750 .tabset}
+-----------------------------------------------------------------------
+
+### Job Sector by Cohort
+
+```{r job-sector-chart}
+plot_ly(
+  data = sd_plot_data,
+  x = ~gradYearCohort,
+  y = ~percentage,
+  color = ~jobSector,        
+  colors = industry_palette, 
+  type = 'bar',
+  customdata = ~count,
+  hovertemplate = paste0(
+    "<b>%{fullData.name}</b><br>",
+    "Percentage: %{y:.1%}<br>",
+    "Number of Grads: %{customdata}<extra></extra>"
+  )
+) %>%
+layout(
+  barmode = 'stack',
+  title = list(
+    text = "<b>In what job sectors are our PhD graduates currently working?</b><br><sup>Snapshot 2025: 2016 to 2025 graduating classes</sup>",
+    x = 0.01
+  ),
+  xaxis = list(
+    title = "<b>Graduation Year Cohort</b>",
+    categoryorder = "array",
+    categoryarray = cohort_order
+  ),
+  yaxis = list(
+    title = "<b>Percentage</b>",
+    tickformat = ".0%"
+  ),
+  legend = list(
+    title = list(text = "<b>Job Sector</b>"),
+    traceorder = 'reversed' 
+  ),
+  font = list(family = "Instrument Sans")
+)
+
+```
+
+### Academic Positions by Cohort
+
+```{r academic-positions-chart}
+plot_ly(
+  data = sd_academic_data,
+  x = ~gradYearCohort_academic,
+  y = ~count,
+  color = ~academicPosition,
+  colors = academic_palette,
+  type = 'bar',
+  hovertemplate = paste0(
+    "<b>%{fullData.name}</b><br>",
+    "Count: %{y}<extra></extra>"
+  )
+) %>%
+layout(
+  barmode = 'stack',
+  title = list(
+    text = "<b>How many graduates are working as Faculty Members, Post Docs, or Researchers?</b><br><sup>2025 Snapshot: 2016 to 2025 graduating classes</sup>",
+    x = 0.01
+  ),
+  xaxis = list(
+    title = "<b>Graduation Year Cohort</b>",
+    categoryorder = "array",
+    categoryarray = academic_cohort_order
+  ),
+  yaxis = list(
+    title = "<b>Count</b>"
+  ),
+  legend = list(
+    title = list(text = "<b>Academic Position</b>"),
+    traceorder = 'reversed'
+  ),
+  font = list(family = "Instrument Sans")
+)
+```
+
+### Institutional Characteristics
+
+```{r institutional-charts, fig.height=10}
+# --- AAU STATUS DATA PREP ---
+aau_data <- institutional_plot_data %>% 
+  filter(!is.na(aau)) %>%
+  mutate(
+    AAU_Status = recode(aau, "AAU Member" = "AAU", "Non-AAU Member" = "Non-AAU")
+  ) %>%
+  count(program_filter, AAU_Status, name = "count")
+
+sd_aau_data <- SharedData$new(aau_data, key = ~program_filter, group = "program_group")
+
+# --- INSTITUTIONAL CONTROL DATA PREP ---
+control_data <- institutional_plot_data %>% 
+  filter(!is.na(control)) %>%
+  mutate(
+    Inst_Control = recode(control, "International" = "Int'l")
+  ) %>%
+  count(program_filter, Inst_Control, name = "count") %>%
+  mutate(
+    Inst_Control = factor(Inst_Control, levels = c("Public", "Private", "Int'l"))
+  )
+
+sd_control_data <- SharedData$new(control_data, key = ~program_filter, group = "program_group")
+
+# --- CARNEGIE CLASSIFICATION DATA PREP ---
+carnegie_data <- institutional_plot_data %>% 
+  filter(!is.na(carnegie)) %>%
+  mutate(
+    Carnegie_Simple = str_wrap(carnegie, width = 40)
+  ) %>%
+  count(program_filter, Carnegie_Simple, name = "count")
+
+# Get unique Carnegie classifications ordered by total count
+carnegie_levels <- carnegie_data %>%
+  group_by(Carnegie_Simple) %>%
+  summarise(total_count = sum(count), .groups = 'drop') %>%
+  arrange(total_count) %>%
+  pull(Carnegie_Simple)
+
+# Apply the factor levels
+carnegie_data <- carnegie_data %>%
+  mutate(
+    Carnegie_Simple = factor(Carnegie_Simple, levels = carnegie_levels)
+  )
+
+sd_carnegie_data <- SharedData$new(carnegie_data, key = ~program_filter, group = "program_group")
+
+# --- CREATE TOP ROW: AAU AND CONTROL SIDE BY SIDE ---
+top_row <- subplot(
+  # AAU Chart
+  plot_ly(
+    data = sd_aau_data,
+    x = ~AAU_Status,
+    y = ~count,
+    type = 'bar',
+    color = ~AAU_Status,
+    colors = c("AAU" = "#A51C30", "Non-AAU" = "grey75"),
+    hovertemplate = "<b>%{x}</b><br>Count: %{y}<extra></extra>",
+    showlegend = FALSE
+  ) %>%
+  layout(
+    title = list(text = "<b>AAU vs Non-AAU</b>", font = list(size = 12, family = "Instrument Sans")),
+    xaxis = list(title = "AAU Member"),
+    yaxis = list(title = "Count"),
+    font = list(family = "Instrument Sans")  # ← Added this
+  ),
+  
+  # Control Chart
+  plot_ly(
+    data = sd_control_data,
+    x = ~Inst_Control,
+    y = ~count,
+    type = 'bar',
+    color = ~Inst_Control,
+    colors = c("Public" = "#A51C30", "Private" = "grey75", "Int'l" = "grey40"),
+    hovertemplate = "<b>%{x}</b><br>Count: %{y}<extra></extra>",
+    showlegend = FALSE
+  ) %>%
+  layout(
+    title = list(text = "<b>Institutional Control</b>", font = list(size = 12, family = "Instrument Sans")),
+    xaxis = list(title = "Institutional Control"),
+    yaxis = list(title = "Count"),
+    font = list(family = "Instrument Sans")  # ← Added this
+  ),
+  
+  nrows = 1,
+  margin = 0.05
+) %>%
+layout(
+  height = 300,
+  margin = list(t = 60, b = 40, l = 60, r = 60),
+  font = list(family = "Instrument Sans")  # ← Added this
+)
+
+# --- CREATE BOTTOM CHART: CARNEGIE ---
+bottom_chart <- plot_ly(
+  data = sd_carnegie_data,
+  x = ~count,
+  y = ~Carnegie_Simple,
+  type = 'bar',
+  orientation = 'h',
+  marker = list(color = "#A51C30"),
+  hovertemplate = "<b>%{y}</b><br>Count: %{x}<extra></extra>",
+  showlegend = FALSE
+) %>%
+layout(
+  title = list(text = "<b>Carnegie Classification</b>", font = list(size = 12, family = "Instrument Sans")),
+  xaxis = list(title = "Count"),
+  yaxis = list(
+    title = "",
+    categoryorder = "total ascending"  # ← Add this
+  ),
+  height = 350,
+  margin = list(t = 60, b = 40, l = 60, r = 60),
+  font = list(family = "Instrument Sans")
+)
+
+# --- COMBINE WITH HTML LAYOUT ---
+htmltools::div(
+  style = "margin-top: 20px; font-family: 'Instrument Sans', sans-serif;",  # ← Added font here too
+  
+  # Main title
+  htmltools::h3(
+    style = "text-align: left; margin-bottom: 10px; font-weight: bold; font-size: 16px; font-family: 'Instrument Sans', sans-serif;",
+    "What are the academic institutional characteristics of graduates who are working as either Faculty Members, Post Docs, or Researchers?"
+  ),
+  htmltools::p(
+    style = "text-align: left; margin-bottom: 30px; font-size: 12px; color: #666; font-family: 'Instrument Sans', sans-serif;",
+    "2025 Snapshot: 2016 to 2025 graduating classes"
+  ),
+  
+  # Top row charts
+  top_row,
+  
+  # Bottom chart
+  bottom_chart,
+  
+  # Caption
+  htmltools::p(
+    style = "text-align: center; margin-top: 20px; font-size: 10px; color: gray; font-style: italic; font-family: 'Instrument Sans', sans-serif;",
+    "Excludes graduates working in academia in roles that do not involve teaching or research (e.g., administration, other)"
+  )
+)
+```
+
+### Academic Institutions
+
+```{r academic-institutions-chart, fig.height=8}
+# --- ACADEMIC INSTITUTIONS DATA PREP ---
+# Filter for academic job sectors only
+academic_institutions_data <- data_with_cohorts %>%
+  filter(jobSector %in% c("Faculty (TT)", "Faculty (Other)", "Post Doc/Fellow", "Other Academic")) %>%
+  filter(!is.na(entityName)) %>%
+  mutate(program_filter = program) %>%
+  count(program_filter, entityName, name = "count")
+
+# Create "All Departments" summary for institutions
+academic_institutions_all <- data_with_cohorts %>%
+  filter(jobSector %in% c("Faculty (TT)", "Faculty (Other)", "Post Doc/Fellow", "Other Academic")) %>%
+  filter(!is.na(entityName)) %>%
+  count(entityName, name = "count") %>%
+  mutate(program_filter = "All Departments")
+
+# Combine institution data
+institutions_plot_data <- academic_institutions_all %>%
+  bind_rows(academic_institutions_data) %>%
+  mutate(program_filter = factor(program_filter, levels = c("All Departments", dept_names)))
+
+# Create SharedData for institutions chart
+sd_institutions_data <- SharedData$new(institutions_plot_data, key = ~program_filter, group = "program_group")
+
+# --- CREATE INSTITUTIONS CHART ---
+institutions_chart <- plot_ly(
+  data = sd_institutions_data,
+  x = ~count,
+  y = ~entityName,
+  type = 'bar',
+  orientation = 'h',
+  marker = list(color = "#A51C30"),
+  hovertemplate = "<b>%{y}</b><br>Count: %{x}<extra></extra>",
+  showlegend = FALSE
+) %>%
+layout(
+  title = list(text = "<b>Academic Institutions</b>", font = list(size = 12, family = "Instrument Sans")),
+  xaxis = list(title = "Count"),
+  yaxis = list(
+    title = "",
+    categoryorder = "total ascending"  # Dynamic sorting like Carnegie chart
+  ),
+  height = 600,
+  margin = list(t = 60, b = 40, l = 60, r = 60),
+  font = list(family = "Instrument Sans")
+)
+
+# --- DISPLAY WITH TITLE AND CAPTION ---
+htmltools::div(
+  style = "margin-top: 20px; font-family: 'Instrument Sans', sans-serif;",
+  
+  # Main title
+  htmltools::h3(
+    style = "text-align: left; margin-bottom: 10px; font-weight: bold; font-size: 16px; font-family: 'Instrument Sans', sans-serif;",
+    "What are the institutions where graduates are working as either Faculty Members, Post Docs, or Researchers?"
+  ),
+  htmltools::p(
+    style = "text-align: left; margin-bottom: 30px; font-size: 12px; color: #666; font-family: 'Instrument Sans', sans-serif;",
+    "2025 Snapshot: 2016 to 2025 graduating classes"
+  ),
+  
+  # Chart
+  institutions_chart,
+  
+  # Caption
+  htmltools::p(
+    style = "text-align: center; margin-top: 20px; font-size: 10px; color: gray; font-style: italic; font-family: 'Instrument Sans', sans-serif;",
+    "Excludes graduates working in academia in roles that do not involve teaching or research (e.g., administration, other)"
+  )
+)
+```
+
+### Geography
+
+```{r geography-charts, fig.height=12}
+# --- CREATE U.S. MAP CHART ---
+us_chart <- plot_ly(
+  data = sd_us_data,
+  type = "choropleth",
+  locations = ~state,
+  z = ~count,
+  text = ~state,  # ← Add this line
+  locationmode = "USA-states",
+  colorscale = list(c(0, "grey90"), c(0.2, "#fee5d9"), c(0.4, "#fcae91"), c(0.6, "#fb6a4a"), c(0.8, "#de2d26"), c(1, "#a50f15")),
+  hovertemplate = "<b>%{text}</b><br>Count: %{z}<extra></extra>",  # ← Changed from %{locations} to %{text}
+  showlegend = FALSE
+) %>%
+layout(
+  title = list(text = "<b>U.S.-based PhD Graduates</b>", font = list(size = 14, family = "Instrument Sans")),
+  geo = list(scope = 'usa'),
+  font = list(family = "Instrument Sans"),
+  height = 400
+)
+
+# --- CREATE INTERNATIONAL CHART ---
+intl_chart <- plot_ly(
+  data = sd_intl_data,
+  x = ~count,
+  y = ~DisplayCode,
+  type = 'bar',
+  orientation = 'h',
+  color = ~Region,
+  colors = c("Americas" = "#A51C30", "Europe" = "#c0606e", "Asia incl. Middle East" = "#dba4ac", "Other" = "#edd1d5"),
+  hovertemplate = "<b>%{y}</b><br>Count: %{x}<br>Region: %{fullData.name}<extra></extra>",
+  showlegend = TRUE
+) %>%
+layout(
+  title = list(text = "<b>International PhD Graduates by Region</b>", font = list(size = 14, family = "Instrument Sans")),
+  xaxis = list(title = "Count"),
+  yaxis = list(title = "", categoryorder = "total ascending"),
+  font = list(family = "Instrument Sans"),
+  height = 500,
+  legend = list(title = list(text = "<b>Region</b>"))
+)
+
+# --- DISPLAY WITH TITLES AND UPDATED CAPTION ---
+htmltools::div(
+  style = "margin-top: 20px; font-family: 'Instrument Sans', sans-serif;",
+  
+  htmltools::h3(
+    style = "text-align: left; margin-bottom: 10px; font-weight: bold; font-size: 16px; font-family: 'Instrument Sans', sans-serif;",
+    "Where are our PhD graduates working geographically?"
+  ),
+  htmltools::p(
+    style = "text-align: left; margin-bottom: 30px; font-size: 12px; color: #666; font-family: 'Instrument Sans', sans-serif;",
+    "2025 Snapshot: 2016 to 2025 graduating classes"
+  ),
+  
+ us_chart,
+  
+  # ← Moved the caption here, between the two charts
+  htmltools::p(
+    style = "text-align: center; margin-top: 20px; margin-bottom: 20px; font-size: 10px; color: gray; font-style: italic; font-family: 'Instrument Sans', sans-serif;",
+    "Includes all job sectors. U.S. map excludes DC, PR, and graduates with unspecified U.S. locations."
+  ),
+  
+  intl_chart
+)
+```
+
+### Graduate Listings
+
+```{r graduate-listings-table}
+# Title and description at the top
+htmltools::div(
+  style = "margin-top: 20px; margin-bottom: 20px; font-family: 'Instrument Sans', sans-serif;",
+  
+  htmltools::h3(
+    style = "text-align: left; margin-bottom: 10px; font-weight: bold; font-size: 16px; font-family: 'Instrument Sans', sans-serif;",
+    "Individual Graduate Records"
+  ),
+  htmltools::p(
+    style = "text-align: left; margin-bottom: 10px; font-size: 12px; color: #666; font-family: 'Instrument Sans', sans-serif;",
+    "2025 Snapshot: 2016 to 2025 graduating classes"
+  ),
+  htmltools::p(
+    style = "text-align: left; margin-bottom: 20px; font-size: 10px; color: gray; font-style: italic; font-family: 'Instrument Sans', sans-serif;",
+    "Click column headers to sort. Use search boxes above columns to filter. Download buttons above table export current view. All graduate records are shown regardless of department dropdown selection."
+  )
+)
+
+# Create the interactive table
+DT::datatable(
+  sd_graduate_listings$data() %>%
+    select(-program_filter),
+  extensions = 'Buttons',  # ← Added this for download functionality
+  options = list(
+    pageLength = 25,
+    scrollX = TRUE,
+    scrollY = "600px",
+    scrollCollapse = TRUE,
+    dom = 'Bfrtip',  # ← Changed from 'frtip' to 'Bfrtip' (B = buttons)
+    buttons = list(
+      list(extend = 'copy', text = 'Copy'),
+      list(extend = 'csv', filename = 'graduate_listings', text = 'CSV'),
+      list(extend = 'excel', filename = 'graduate_listings', text = 'Excel'),
+      list(extend = 'print', text = 'Print')
+    ),
+    autoWidth = FALSE,
+    columnDefs = list(
+      list(width = '60px', targets = c(0)),   # ID column narrower
+      list(width = '100px', targets = c(1)),  # Department column
+      list(width = '80px', targets = c(2)),   # Degree column
+      list(width = '80px', targets = c(3)),   # Grad Year column
+      list(width = '180px', targets = c(4)),  # Employer column wider
+      list(width = '140px', targets = c(5)),  # Position column
+      list(width = '100px', targets = c(6)),  # Job Sector column
+      list(width = '120px', targets = c(7)),  # Academic Position column
+      list(width = '80px', targets = c(8)),   # Start Year column
+      list(width = '80px', targets = c(9)),   # Country column
+      list(width = '80px', targets = c(10)),  # State column
+      list(className = 'dt-center', targets = c(0, 2, 3, 8, 9, 10))
+    ),
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(this.api().table().container()).css({'font-family': 'Instrument Sans'});",
+      "$('.dataTables_scrollBody').css({'overflow-x': 'auto'});",
+      "$('.dt-buttons').css({'font-family': 'Instrument Sans', 'margin-bottom': '10px'});",  # ← Style buttons
+      "}"
+    )
+  ),
+  filter = 'top',
+  rownames = FALSE,
+  class = 'cell-border stripe hover compact',
+  style = 'bootstrap4'
+) %>%
+DT::formatStyle(
+  columns = 1:11,
+  fontFamily = "Instrument Sans"
+) %>%
+DT::formatStyle(
+  columns = c(10, 11),
+  textAlign = 'center'
+)
+```
+
