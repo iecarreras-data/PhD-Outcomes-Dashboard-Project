@@ -29,8 +29,9 @@ The repository is structured as a self-contained RStudio Project to ensure full 
     │   ├── 01_create_cohorts.R
     │   ├── 02_assign_careers.R
     │   ├── 03_add_location_data.R
-    │   ├── 07_build_dashboard.R
-    │   └── phd-outcomes-dashboard.Rmd
+    │   ├── phd-outcomes-dashboard.Rmd
+    │   └── render_both_versions.R
+
     ├── data/
     │   └── processed/
     ├── output/
@@ -85,7 +86,7 @@ Then build both dashboard versions:
     *   **Input:** data/processed/02_simulated_careers.rds
     *   **Output:** data/processed/03_final_dataset.rds
 
-4.  **07_build_dashboard.R**
+4.  **render_both_versions.R**
     *   **Purpose:** Renders two versions of the interactive HTML dashboard: a self-contained portable version and a GitHub Pages version with external libs folder
     *   **Input:** data/processed/03_final_dataset.rds
     *   **Output:** output/phd-outcomes-dashboard.html (portable), output/phd-outcomes-dashboard-web.html (GitHub Pages)
