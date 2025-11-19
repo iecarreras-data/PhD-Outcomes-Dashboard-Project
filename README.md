@@ -71,25 +71,25 @@ pacman::p_load(
 
 ## Project Structure
 
-PhD-Outcomes-Dashboard-Project/
-├── R/
-│   ├── 01_create_cohorts.R          # Generate initial cohort data
-│   ├── 02_assign_careers.R          # Assign job sectors and employers
-│   ├── 03_add_location_data.R       # Add geographic and institutional data
-│   ├── 07_build_dashboard.R         # Render HTML outputs
-│   └── phd-outcomes-dashboard.Rmd   # Dashboard source code
-├── data/
-│   └── processed/                   # Generated RDS files (git-ignored)
-│       ├── 01_simulated_cohorts.rds
-│       ├── 02_simulated_careers.rds
-│       └── 03_final_dataset.rds
-├── output/                          # Generated HTML files (git-ignored)
-│   ├── phd-outcomes-dashboard.html      # Portable version
-│   ├── phd-outcomes-dashboard-web.html  # GitHub Pages version
-│   └── libs/                            # JavaScript/CSS dependencies
-├── .gitignore
-├── README.md
-└── PhD-Outcomes-Dashboard-Project.Rproj
+    PhD-Outcomes-Dashboard-Project/
+    ├── R/
+    │   ├── 01_create_cohorts.R          # Generate initial cohort data
+    │   ├── 02_assign_careers.R          # Assign job sectors and employers
+    │   ├── 03_add_location_data.R       # Add geographic and institutional data
+    │   ├── 07_build_dashboard.R         # Render HTML outputs
+    │   └── phd-outcomes-dashboard.Rmd   # Dashboard source code
+    ├── data/
+    │   └── processed/                   # Generated RDS files (git-ignored)
+    │       ├── 01_simulated_cohorts.rds
+    │       ├── 02_simulated_careers.rds
+    │       └── 03_final_dataset.rds
+    ├── output/                          # Generated HTML files (git-ignored)
+    │   ├── phd-outcomes-dashboard.html      # Portable version
+    │   ├── phd-outcomes-dashboard-web.html  # GitHub Pages version
+    │   └── libs/                            # JavaScript/CSS dependencies
+    ├── .gitignore
+    ├── README.md
+    └── PhD-Outcomes-Dashboard-Project.Rproj
 
 ## Installation & Usage
 
@@ -172,11 +172,11 @@ This project uses a dual-repository approach for clean separation of source code
 
 To adjust the simulation parameters, edit these variables in `R/01_create_cohorts.R`:
 
-n_cs <- 150           # Number of Computer Science graduates
-n_physics <- 325      # Number of Physics graduates
-n_biomed <- 425       # Number of Biomedical Sciences graduates
-start_year <- 2016    # First graduation year
-end_year <- 2025      # Last graduation year
+    n_cs <- 150           # Number of Computer Science graduates
+    n_physics <- 325      # Number of Physics graduates
+    n_biomed <- 425       # Number of Biomedical Sciences graduates
+    start_year <- 2016    # First graduation year
+    end_year <- 2025      # Last graduation year
 
 ### Changing Career Probability Distributions
 
