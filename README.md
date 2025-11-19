@@ -6,7 +6,7 @@ This dashboard addresses the common need for academic departments to understand 
 
 The end product is an interactive tool that transforms complex career outcome data into an intuitive platform for strategic decision-making, showcasing my ability to build sophisticated data products from concept to deployment.
 
-**Live Demo:** [View Dashboard](https://iecarreras-data.github.io/phd-outcomes-dashboard-web.html)
+**Live Demo:** [View Dashboard](https://iecarreras-data.github.io/projects/phd-outcomes-dashboard/phd-outcomes-dashboard-web.html)
 
 ### Core Competencies Showcased
 
