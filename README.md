@@ -1,176 +1,116 @@
 # PhD Career Outcomes Dashboard
 
-An interactive R dashboard that visualizes simulated career outcome data for PhD graduates across three academic departments: Computer Science, Physics, and Biomedical Sciences. Built with R, Flexdashboard, and Plotly, this project demonstrates advanced data visualization techniques and dashboard development skills.
-
 ## Project Overview
 
-This dashboard addresses the common need for academic departments to understand and showcase the diverse career paths of their alumni. It provides a clean, professional, and powerful resource for faculty, prospective students, and administrators.
+This dashboard addresses the common need for academic departments to understand and showcase the diverse career paths of their alumni. It provides a clean, professional, and powerful resource for faculty, prospective students, and administrators to explore employment outcomes across Computer Science, Physics, and Biomedical Sciences PhD programs.
+
+The end product is an interactive tool that transforms complex career outcome data into an intuitive platform for strategic decision-making, showcasing my ability to build sophisticated data products from concept to deployment.
 
 **Live Demo:** [View Dashboard](https://iecarreras-data.github.io/phd-outcomes-dashboard-web.html)
 
-**Source Code Repository:** [PhD-Outcomes-Dashboard-Project](https://github.com/iecarreras/PhD-Outcomes-Dashboard-Project)
+### Core Competencies Showcased
 
-## Features
+*   **Develop Advanced Dashboards:** Structuring a complex, multi-tab layout with global filtering using flexdashboard and crosstalk
+*   **Data Simulation:** Creating realistic, high-fidelity synthetic datasets using Generative AI that accurately mimic real-world PhD career outcome distributions
+*   **Implement Linked Visualizations:** Using the crosstalk package to allow a single dropdown menu to dynamically filter multiple independent plots across the dashboard
+*   **Create Rich Data-Driven Stories:** Designing targeted visualizations (stacked bars, choropleth maps, horizontal bars, interactive tables) to answer specific questions about job sectors, institutional characteristics, and geography
 
-### Interactive Visualizations
+---
 
-- **Job Sector Distribution:** Stacked bar charts showing employment sectors (academic, industry, government, nonprofit) by graduation cohort
-- **Academic Position Tracking:** Counts of graduates in faculty, postdoc, and research positions over time
-- **Institutional Characteristics:** Analysis of AAU membership, institutional control (public/private), and Carnegie classifications
-- **Academic Institution Rankings:** Bar charts showing top employers in academia
-- **Geographic Distribution:** Interactive U.S. choropleth map and international placement charts
-- **Graduate Listings:** Searchable, sortable table with individual graduate records and downloadable CSV/Excel export
+### Tech Stack & Repository Structure
 
-### Technical Features
+*   **Language:** R
+*   **Key R Packages:** tidyverse, here, flexdashboard, plotly, crosstalk, DT, scales, countrycode
 
-- **Global Filtering:** Single dropdown menu dynamically filters all visualizations across the dashboard using the `crosstalk` package
-- **Responsive Layout:** Multi-tab flexdashboard design optimized for desktop viewing
-- **Custom Styling:** Google Fonts (Instrument Sans) and custom CSS for professional appearance
-- **Data Export:** Built-in download functionality for graduate listings (CSV, Excel, print)
+The repository is structured as a self-contained RStudio Project to ensure full reproducibility.
 
-## Data & Methodology
-
-### Simulated Dataset
-
-To ensure privacy while demonstrating full functionality, this dashboard is built upon an **entirely synthetic dataset**. The simulation process showcases a critical modern data science skill:
-
-- **Generative AI for Data Simulation:** Used GenAI to create a realistic, high-fidelity dataset that accurately mimics the structure, distributions, and complexity of real-world PhD career outcomes
-- **900 Simulated Graduates:** 150 Computer Science, 325 Physics, and 425 Biomedical Sciences PhDs
-- **Graduation Years:** 2016-2025 cohorts
-- **Career Sectors:** Faculty (tenure-track and other), postdocs, industry, government, nonprofit, and unavailable outcomes
-- **Geographic Diversity:** U.S. states and international locations (Canada, UK, Switzerland, Germany, Japan, Netherlands)
-- **Institutional Data:** AAU membership, Carnegie classifications, and institutional control types
-
-### Data Generation Process
-
-1. **Script 01:** Generates initial cohorts with personID, program, and graduation year
-2. **Script 02:** Assigns career outcomes (job sector, employer, position) based on realistic probability distributions specific to each department
-3. **Script 03:** Adds location data (city, state, country) and institutional characteristics (Carnegie classification, AAU status)
-
-All data is stored as RDS files in `data/processed/` (git-ignored).
-
-## Technical Stack
-
-### Core Technologies
-
-- **R (v4.0+):** Statistical computing and data processing
-- **RStudio:** IDE and project management
-- **flexdashboard:** Dashboard framework
-- **plotly:** Interactive visualizations
-- **crosstalk:** Linked filtering across visualizations
-- **DT (DataTables):** Interactive data tables with search/sort/export
-- **tidyverse:** Data manipulation (dplyr, tidyr, ggplot2, etc.)
-- **here:** Reproducible file paths
-
-### Key Packages
-
-pacman::p_load(
-  flexdashboard, plotly, crosstalk, DT,
-  tidyverse, here, scales, countrycode
-)
-
-## Project Structure
-
-    PhD-Outcomes-Dashboard-Project/
+    .
     ├── R/
-    │   ├── 01_create_cohorts.R          # Generate initial cohort data
-    │   ├── 02_assign_careers.R          # Assign job sectors and employers
-    │   ├── 03_add_location_data.R       # Add geographic and institutional data
-    │   ├── 07_build_dashboard.R         # Render HTML outputs
-    │   └── phd-outcomes-dashboard.Rmd   # Dashboard source code
+    │   ├── 01_create_cohorts.R
+    │   ├── 02_assign_careers.R
+    │   ├── 03_add_location_data.R
+    │   ├── 07_build_dashboard.R
+    │   └── phd-outcomes-dashboard.Rmd
     ├── data/
-    │   └── processed/                   # Generated RDS files (git-ignored)
-    │       ├── 01_simulated_cohorts.rds
-    │       ├── 02_simulated_careers.rds
-    │       └── 03_final_dataset.rds
-    ├── output/                          # Generated HTML files (git-ignored)
-    │   ├── phd-outcomes-dashboard.html      # Portable version
-    │   ├── phd-outcomes-dashboard-web.html  # GitHub Pages version
-    │   └── libs/                            # JavaScript/CSS dependencies
+    │   └── processed/
+    ├── output/
     ├── .gitignore
-    ├── README.md
-    └── PhD-Outcomes-Dashboard-Project.Rproj
+    ├── PhD-Outcomes-Dashboard-Project.Rproj
+    └── README.md
 
-## Installation & Usage
+---
 
-### Prerequisites
+### How to Reproduce This Project
 
-- R (version 4.0 or higher)
-- RStudio (recommended)
-- Required R packages (installed automatically via `pacman`)
+Follow these steps to run the entire data pipeline and generate the final dashboard.
 
-### Setup
+#### 1. Setup & Prerequisites
 
-1. Clone the repository
-2. Open the R Project by double-clicking `PhD-Outcomes-Dashboard-Project.Rproj` in RStudio
-3. Run the data generation pipeline by executing these commands in the RStudio Console:
+1.  **Clone the Repository:** Clone this repository to your local machine using git clone.
 
-source("R/01_create_cohorts.R")
-source("R/02_assign_careers.R")
-source("R/03_add_location_data.R")
+2.  **Open the Project:** Open RStudio by double-clicking the PhD-Outcomes-Dashboard-Project.Rproj file. This is crucial as it sets the correct working directory.
 
-4. Build the dashboard:
+3.  **Install Packages:** Open the R console in RStudio and install all necessary packages using pacman.
 
-source("R/07_build_dashboard.R")
+#### 2. Run the Data Generation Pipeline
 
-5. View the output by opening `output/phd-outcomes-dashboard.html` in your web browser
+The scripts in the R folder must be run in numerical order. Each script's output serves as the next script's input.
 
-### File Paths
+##### Running the Scripts
 
-This project uses the `here` package for robust, portable file paths. All scripts work regardless of your working directory as long as you open the `.Rproj` file.
+Execute each script in order:
 
-## Deployment
+    source(here::here("R", "01_create_cohorts.R"))
+    source(here::here("R", "02_assign_careers.R"))
+    source(here::here("R", "03_add_location_data.R"))
 
-### Two-Repository Strategy
+Then build both dashboard versions:
 
-This project uses a dual-repository approach for clean separation of source code and deployed content:
+    source(here::here("R", "07_build_dashboard.R"))
 
-1. **Source Code Repository** contains R scripts, .Rmd source, and documentation. Uses `self_contained: TRUE` for portable HTML output. Excludes generated data and HTML files via `.gitignore`.
+##### Pipeline Details
 
-2. **GitHub Pages Repository** hosts the live dashboard. Contains `phd-outcomes-dashboard-web.html` and `libs/` folder. Uses `self_contained: FALSE` to reduce file size.
+1.  **01_create_cohorts.R**
+    *   **Purpose:** Generates the initial cohort of simulated PhD graduates with personID, program, and graduation year
+    *   **Input:** None (creates synthetic data)
+    *   **Output:** data/processed/01_simulated_cohorts.rds
 
-### Deployment Steps
+2.  **02_assign_careers.R**
+    *   **Purpose:** Assigns realistic career outcomes including job sector, employer, and position based on department-specific probability distributions
+    *   **Input:** data/processed/01_simulated_cohorts.rds
+    *   **Output:** data/processed/02_simulated_careers.rds
 
-1. Run `source("R/07_build_dashboard.R")` to generate both versions
-2. Copy `output/phd-outcomes-dashboard-web.html` to your GitHub Pages repo
-3. Copy `output/libs/` folder to your GitHub Pages repo
-4. Commit and push to GitHub Pages repo using RStudio Git pane
-5. Access at: `https://iecarreras-data.github.io/phd-outcomes-dashboard-web.html`
+3.  **03_add_location_data.R**
+    *   **Purpose:** Parses employer names to extract geographic location, adds institutional characteristics (Carnegie classification, AAU status, institutional control)
+    *   **Input:** data/processed/02_simulated_careers.rds
+    *   **Output:** data/processed/03_final_dataset.rds
 
-## Skills Demonstrated
+4.  **07_build_dashboard.R**
+    *   **Purpose:** Renders two versions of the interactive HTML dashboard: a self-contained portable version and a GitHub Pages version with external libs folder
+    *   **Input:** data/processed/03_final_dataset.rds
+    *   **Output:** output/phd-outcomes-dashboard.html (portable), output/phd-outcomes-dashboard-web.html (GitHub Pages)
 
-### Data Science & Analytics
-- Synthetic data generation using probability distributions
-- Data pipeline development (extract → transform → aggregate → visualize)
-- Statistical analysis and cohort-based comparisons
-- Geographic data processing and mapping
+After running all scripts, open output/phd-outcomes-dashboard.html in your web browser to view the final, interactive dashboard.
 
-### Data Visualization
-- Interactive dashboard design with multiple linked visualizations
-- Effective use of color palettes for categorical data
-- Choropleth maps (U.S. state-level)
-- Stacked bar charts with custom ordering
-- Horizontal bar charts for institutional rankings
-- Custom tooltips and hover interactions
+---
 
-### Software Engineering
-- Modular, numbered script workflow (01, 02, 03, etc.)
-- Reproducible research practices (here package, .Rproj)
-- Version control with Git/GitHub
-- Documentation (README, inline comments)
-- Separation of concerns (data generation → processing → visualization)
+### Key Technical Solutions
 
-### Web Development
-- HTML/CSS customization (Google Fonts, custom styling)
-- Responsive flexdashboard layouts
-- GitHub Pages deployment
-- JavaScript library integration (plotly, DT)
+This project demonstrates advanced data visualization and dashboard development practices:
 
-## Customization
+- **Global Cross-Chart Filtering:** Single dropdown menu controls all visualizations simultaneously using SharedData objects from the crosstalk package
+- **Realistic Probability Distributions:** Department-specific career outcome probabilities that reflect actual PhD employment patterns (e.g., Physics grads have higher postdoc rates than CS grads)
+- **Geographic Data Processing:** Automated parsing of location strings from employer names and mapping to U.S. states, international countries, and institutional metadata
+- **Two-Repository Deployment Strategy:** Separate source code repository and GitHub Pages repository for clean separation of development and production environments
+- **Interactive Data Tables:** Searchable, sortable graduate listings with built-in CSV/Excel export functionality using the DT package
 
-### Modifying the Data
+---
 
-To adjust the simulation parameters, edit these variables in `R/01_create_cohorts.R`:
+### Customization
+
+#### Modifying the Data
+
+To adjust the simulation parameters, edit these variables in R/01_create_cohorts.R:
 
     n_cs <- 150           # Number of Computer Science graduates
     n_physics <- 325      # Number of Physics graduates
@@ -178,44 +118,22 @@ To adjust the simulation parameters, edit these variables in `R/01_create_cohort
     start_year <- 2016    # First graduation year
     end_year <- 2025      # Last graduation year
 
-### Changing Career Probability Distributions
+#### Changing Career Probability Distributions
 
-Edit the `career_definitions` list in `R/02_assign_careers.R` to modify:
-- Job sector probabilities by department and cohort
-- Employer lists
-- Position titles
+Edit the career_definitions list in R/02_assign_careers.R to modify job sector probabilities, employer lists, and position titles for each department and cohort.
 
-### Adjusting Visual Design
+#### Adjusting Visual Design
 
-- **Color Palettes:** Modify `industry_palette` and `academic_palette` in the .Rmd setup chunk
+- **Color Palettes:** Modify industry_palette and academic_palette in the .Rmd setup chunk
 - **Fonts:** Change the Google Fonts import in the CSS block
-- **Layout:** Adjust flexdashboard column widths using `{data-width=}` attributes
+- **Layout:** Adjust flexdashboard column widths using data-width attributes
 
-## Known Limitations
+---
 
-- **Synthetic Data Only:** All graduate records are simulated and do not represent real individuals
-- **Desktop Optimized:** Dashboard is designed for desktop viewing (limited mobile responsiveness)
-- **Static Snapshots:** Data represents a fixed point in time (2025 snapshot of 2016-2025 cohorts)
-- **Simplified Geography:** International locations are limited to a few countries
+### Contact & Attribution
 
-## Future Enhancements
+**Author:** Ismael E. Carreras  
+**GitHub:** @iecarreras  
+**LinkedIn:** Ismael E. Carreras
 
-- Add salary/compensation data (simulated)
-- Include time-to-degree metrics
-- Track career progression over time (initial placement vs. current position)
-- Add more advanced filtering (multi-select for job sectors, graduation years)
-- Mobile-responsive design
-- Automated data refresh pipeline
-
-## Contact
-
-**Ismael E. Carreras**  
-GitHub: [@iecarreras](https://github.com/iecarreras)  
-Portfolio: [iecarreras-data.github.io](https://iecarreras-data.github.io)
-
-## Acknowledgments
-
-- Dashboard framework: [flexdashboard](https://pkgs.rstudio.com/flexdashboard/)
-- Interactive visualizations: [plotly](https://plotly.com/r/)
-- Data manipulation: [tidyverse](https://www.tidyverse.org/)
-- Linked filtering: [crosstalk](https://rstudio.github.io/crosstalk/)
+This project uses entirely synthetic data generated with assistance from Generative AI for demonstration purposes. All graduate records are simulated and do not represent real individuals.
